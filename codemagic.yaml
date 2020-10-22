@@ -64,6 +64,9 @@ workflows:
                 else 
                   echo "AWS tests PASSED!"
                 fi
+            - name: Build Android production release
+              script: |
+                ./gradlew assembleRelease 
         artifacts:
             - app/build/outputs/**/*.apk
         publishing:
