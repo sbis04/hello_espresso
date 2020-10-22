@@ -49,6 +49,9 @@ workflows:
             - name: Build Android debug APK
               script: |
                 ./gradlew assembleDebug
+            - name: Build Android test APK
+              script: |
+                ./gradlew assembleAndroidTest
             - name: Run AWS Device Farm test
               script: |
                 cd .scripts && ./run_aws_espresso.sh
