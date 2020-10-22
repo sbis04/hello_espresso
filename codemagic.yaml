@@ -49,6 +49,21 @@ workflows:
             - name: Build Android debug APK
               script: |
                 ./gradlew assembleDebug
+            - name: Run AWS Device Farm test
+              script: |
+                cd .scripts && ./run_aws_espresso.sh
+            - name: Verify Device Farm test
+              script: |
+                set -e
+                set -x
+                export AWS_RESULT=$(cat $FCI_BUILD_DIR/.scripts/test-result.json | jq -r '.run.result')
+                if [ $AWS_RESULT != "PASSED" ] 
+                then
+                  echo "AWS tests did not pass, the result was $AWS_RESULT"
+                  exit 1
+                else 
+                  echo "AWS tests PASSED!"
+                fi
         artifacts:
             - app/build/outputs/**/*.apk
         publishing:
