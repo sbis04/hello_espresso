@@ -13,7 +13,7 @@ workflows:
                 keytool -genkeypair \
                   -alias androiddebugkey \
                   -keypass android \
-                  -keystore ~/.android/debug.keystore \
+                  -keystore $FCI_BUILD_DIR/app/debug.keystore \
                   -storepass android \
                   -dname 'CN=Android Debug,O=Android,C=US' \
                   -keyalg 'RSA' \
