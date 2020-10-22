@@ -7,7 +7,7 @@ workflows:
             - name: Set Android SDK location
               script: |
                 echo "sdk.dir=$HOME/programs/android-sdk-macosx" > "$FCI_BUILD_DIR/local.properties"
-            - name: Build Android debug APK
+            - name: Generate debug keystore
               script: |
                 rm -f ~/.android/debug.keystore
                 keytool -genkeypair \
