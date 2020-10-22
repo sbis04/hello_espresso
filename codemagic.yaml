@@ -2,8 +2,35 @@
 
 workflows:
     native-android:
-        name: Android Espresso   
+        name: Android Espresso  
+        environment:
+          vars:
+              # AWS Device Farm Environment Variables
+              # See more information from official AWS Device Farm docs:
+              # https://docs.aws.amazon.com/devicefarm/latest/developerguide/how-to-create-test-run.html#how-to-create-test-run-cli
+              AWS_ACCESS_KEY_ID: Encrypted(Z0FBQUFBQmZrVHNJMFF5cEFvbDJEcmVYdmYxRmV2X254amRfbTZYbHBDWHlUVFA4b1hNbkM3aFg5aDBTQjYtbktiMFdaQjFiZVhGeENyM3JKTFB4QzUyOTZwUXFKTEhYUGdKTHVOWmhXUGV5MTFPbW1oUG1KLUE9)
+              AWS_SECRET_ACCESS_KEY: Encrypted(Z0FBQUFBQmZrVHVxWVlZbjRlZmduX0x1M19SbG9TUFo5MFdUYUJ5cGlXTnk3SGRPWThVR3ZXb19VaGdTamtCN2p6Nzc4OGxVY2dYcmNNdmRYUGJmVWNyS3pWSldoVHZSbjV0bXo3MDcyRWFySTBuZTRrVkh6bXEyUEtlczY0MW9QZlRudVU4bVBVSW4=)
+              AWS_PROJECT_ARN: Encrypted(Z0FBQUFBQmZrVHdLZmdranVDZEZCeU0tdUZ3MjY2M0J1WS1fOVJzMVVDMnJtNi1sZ1huRGRQa0tVSnNQaXBybE1GQXc3RWowbkxQTVlNZDNNZ2t2U2p1ZDRIcHVUNDZqV2NEckRLb0NDSjFpdVVyTzNDaGlreEFQVXJ3cWY0bFdVUDJYNmpRbUVRLURXbFJxSjV6d3hCS2dlUVdEc0xWRGFMVjQ5RGNIenRMbnRSNzQxZDRlbS1KNFptSzF0c2VvX0xzWXZCYmFMXy1t)
+              AWS_DEVICE_POOL_ARN: Encrypted(Z0FBQUFBQmZrVHhMMkVLYXRpQkVVQm5WRGxKalY5V1RqX0prVmluMjU0VTFMR3Zya1hMcm9FSnpKUWJFOGEwOHhEWmNiNU1HaGlYUE5QWVNyZnlrNVA0bjdRNmxJU2h3Y3UzbW44eFpHU3pGMFNRZlNPWmFISEtmQzQ5M3FFRnVHM0lQeXlQemtIZGlkcVpYc0RoN3FPdWRlTjg0bW9YTzUxbmN3NGFnR25OeHBnd2F6QWNMV0cwPQ==)
+              AWS_DEFAULT_REGION: "us-west-2"
+              # Set up paths to application binary and test package 
+              AWS_APK_PATH: "$FCI_BUILD_DIR/app/build/outputs/apk/debug/app-debug.apk"
+              AWS_TEST_APK_PATH: "$FCI_BUILD_DIR/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+              # Specify application and test types
+              AWS_APP_TYPE: "ANDROID_APP"
+              AWS_TEST_PACKAGE_TYPE: "INSTRUMENTATION_TEST_PACKAGE"
+              AWS_TEST_TYPE: "INSTRUMENTATION"
         scripts:
+            - name: AWS CLI configuration
+            script: |
+              mkdir ~/.aws
+              cat >> ~/.aws/config <<EOF
+              [default]
+              aws_access_key_id=$AWS_ACCESS_KEY_ID
+              aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+              region=$AWS_DEFAULT_REGION
+              output=json
+              EOF
             - name: Set Android SDK location
               script: |
                 echo "sdk.dir=$HOME/programs/android-sdk-macosx" > "$FCI_BUILD_DIR/local.properties"
@@ -22,6 +49,21 @@ workflows:
             - name: Build Android debug APK
               script: |
                 ./gradlew assembleDebug
+            - name: Run AWS Device Farm test
+              script: |
+                cd .scripts && ./run_aws_espresso.sh
+            - name: Verify Device Farm test
+              script: |
+                set -e
+                set -x
+                export AWS_RESULT=$(cat $FCI_BUILD_DIR/.scripts/test-result.json | jq -r '.run.result')
+                if [ $AWS_RESULT != "PASSED" ] 
+                then
+                  echo "AWS tests did not pass, the result was $AWS_RESULT"
+                  exit 1
+                else 
+                  echo "AWS tests PASSED!"
+                fi
         artifacts:
             - app/build/outputs/**/*.apk
         publishing:
